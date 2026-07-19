@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdrawal_id'], $_PO
     $stmt = $db->prepare('UPDATE withdrawals SET status = ?, updated_at = NOW() WHERE id = ?');
     $stmt->execute([$status, $id]);
 
-    if ($status === 'completed') {
+    if (in_array($status, ['completed', 'rejected'], true)) {
         $stmt = $db->prepare("
             SELECT w.amount, w.method, w.details, w.created_at, u.email, u.name
             FROM withdrawals w
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdrawal_id'], $_PO
         if ($info) {
             $queue = new EmailQueue($db);
             $queue->ensureSchema();
-            $queue->queueWithdrawalStatusEmail($info, 'completed');
+            $queue->queueWithdrawalStatusEmail($info, $status);
         }
     }
 
