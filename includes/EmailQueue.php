@@ -300,7 +300,7 @@ final class EmailQueue
         $subject = $status === 'completed' ? 'Withdrawal Completed' : 'Withdrawal Update';
         $statusLabel = $status === 'completed' ? 'sent successfully' : 'rejected';
         $statusMessage = $status === 'completed'
-            ? 'Your withdrawal has been sent. Funds are typically credited within 1 - 3 business days.'
+            ? 'Your withdrawal has been sent. Please note that 15% was deducted for operational costs, and funds are typically credited within 1 - 3 business days.'
             : 'Your withdrawal request has been rejected. Please contact support if you need more information.';
 
         $detailsHtml = '';

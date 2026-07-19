@@ -3,6 +3,10 @@ Hello {{name}},
 Your withdrawal request has been {{status_label}}.
 {{status_message}}
 
+Withdrawal Summary
+------------------
+Amount: ${{amount}}
+
 Withdrawal Details
 ------------------
 Amount: ${{amount}}
@@ -10,5 +14,4 @@ Method: {{method}}
 Requested at: {{requested_at}}
 {{details_text}}
 
-{{company_name}}
-{{site_url}}
+If you need help with this withdrawal, please contact the {{company_name}} support team.
