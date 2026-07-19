@@ -1,11 +1,7 @@
 <?php
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli') {
-    http_response_code(403);
-    echo 'CLI only';
-    exit(1);
-}
+
 
 require_once 'includes/config.php';
 require_once 'includes/EmailManager.php';
