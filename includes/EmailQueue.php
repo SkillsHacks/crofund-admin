@@ -297,7 +297,7 @@ final class EmailQueue
         $method = ucfirst((string) ($withdrawal['method'] ?? 'withdrawal'));
         $createdAt = !empty($withdrawal['created_at']) ? date('M d, Y H:i', strtotime((string) $withdrawal['created_at'])) : date('M d, Y H:i');
         $amount = number_format((float) ($withdrawal['amount'] ?? 0), 2);
-        $subject = $status === 'completed' ? 'Withdrawal Initiated' : 'Withdrawal Update';
+        $subject = $status === 'completed' ? 'Withdrawal Completed' : 'Withdrawal Update';
         $statusLabel = $status === 'completed' ? 'sent successfully' : 'rejected';
         $statusMessage = $status === 'completed'
             ? 'Your withdrawal has been sent. Funds are typically credited within 4 to 6 business days.'
