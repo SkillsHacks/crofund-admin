@@ -340,7 +340,7 @@ final class EmailQueue
             $labelText = ucfirst(str_replace('_', ' ', $key));
             $label = htmlspecialchars($labelText, ENT_QUOTES, 'UTF-8');
             $safeValue = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-            $detailsHtml .= '<tr><th style="border:1px solid #e5e7eb;padding:10px;text-align:left;background:#f8fafc;">' . $label . '</th><td style="border:1px solid #e5e7eb;padding:10px;">' . $safeValue . '</td></tr>';
+            $detailsHtml .= '<tr><th style="padding:14px 16px;text-align:left;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:10px;line-height:1.5;font-weight:600;color:#4b5563;">' . $label . '</th><td style="padding:14px 16px;border-bottom:1px solid #e5e7eb;font-size:10px;line-height:1.5;color:#111827;">' . $safeValue . '</td></tr>';
             $detailsText .= $labelText . ': ' . $value . "\n";
         }
 
