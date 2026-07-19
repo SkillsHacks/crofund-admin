@@ -4,60 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Notification</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-        .banner {
-            background-color: #059669;
-            text-align: center;
-            padding: 30px;
-            color: white;
-        }
-        .banner h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 600;
-        }
-        .content {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        .footer {
-            background-color: #f3f4f6;
-            text-align: center;
-            padding: 20px;
-            font-size: 12px;
-            color: #666;
-        }
-    </style>
 </head>
-<body>
-    <div class="banner">
-        <h1>{{company_name}}</h1>
-    </div>
-
-    <div class="content">
-        <p>Dear {{name}},</p>
-
-        <div style="margin: 18px 0;">
-            {{custom_message}}
+<body style="margin:0;padding:0;background:#f4f7fb;color:#333333;font-family:Arial,sans-serif;font-size:10px;line-height:1.5;">
+    <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+        <div style="background-color:#059669;text-align:center;padding:30px;color:#ffffff;">
+            <h1 style="margin:0;font-size:10px;line-height:1.5;font-weight:600;">{{company_name}}</h1>
         </div>
 
-        <p>If you have any questions or concerns, please don't hesitate to contact our support team.</p>
+        <div style="max-width:600px;margin:0 auto;padding:30px 20px;font-size:10px;line-height:1.5;">
+            <p style="margin:0 0 16px;font-size:10px;line-height:1.5;">Dear {{name}},</p>
 
-        <p>Best regards,<br>
-        The {{company_name}} Team</p>
-    </div>
+            <div style="margin:18px 0;font-size:10px;line-height:1.5;">
+                {{custom_message}}
+            </div>
 
-    <div class="footer">
-        <p>This is an automated message. Please do not reply directly to this email.</p>
-        <p>&copy; {{current_year}} {{company_name}}. All rights reserved.</p>
+            <p style="margin:0 0 16px;font-size:10px;line-height:1.5;">If you have any questions or concerns, please don't hesitate to contact our support team.</p>
+
+            <p style="margin:0;font-size:10px;line-height:1.5;">Best regards,<br>
+            The {{company_name}} Team</p>
+        </div>
+
+        <div style="background-color:#f3f4f6;text-align:center;padding:20px;font-size:10px;line-height:1.5;color:#666666;">
+            <p style="margin:0 0 10px;font-size:10px;line-height:1.5;">This is an automated message. Please do not reply directly to this email.</p>
+            <p style="margin:0;font-size:10px;line-height:1.5;">&copy; {{current_year}} {{company_name}}. All rights reserved.</p>
+        </div>
     </div>
 </body>
 </html>
