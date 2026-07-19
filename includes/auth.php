@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/EmailManager.php';
-require_once __DIR__ . '/EmailQueue.php';
 
 class Auth {
     private PDO $db;
@@ -48,11 +47,10 @@ class Auth {
         ];
         $_SESSION['two_factor_last_sent_at'] = time();
 
-        $queue = new EmailQueue($this->db);
-        $queue->ensureSchema();
-        if (!$queue->queueAdminTwoFactorCode($user['email'], $user['full_name'], $code)) {
+        $emailManager = new EmailManager($this->db);
+        if (!$emailManager->sendAdminTwoFactorCode($user['email'], $user['full_name'], $code)) {
             unset($_SESSION['pending_admin_login'], $_SESSION['two_factor_last_sent_at']);
-            throw new Exception('Unable to queue verification code.');
+            throw new Exception('Unable to send verification code.');
         }
 
         return true;
@@ -104,9 +102,8 @@ class Auth {
         $_SESSION['pending_admin_login']['attempts'] = 0;
         $_SESSION['two_factor_last_sent_at'] = time();
 
-        $queue = new EmailQueue($this->db);
-        $queue->ensureSchema();
-        return $queue->queueAdminTwoFactorCode($pending['email'], $pending['full_name'], $code);
+        $emailManager = new EmailManager($this->db);
+        return $emailManager->sendAdminTwoFactorCode($pending['email'], $pending['full_name'], $code);
     }
 
     public function hasPendingTwoFactor(): bool {

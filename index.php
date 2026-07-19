@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     session_regenerate_id(true);
                     $pendingUser = $auth->getPendingTwoFactorUser();
                     $isTwoFactorStep = true;
-                    $success = 'A verification code has been requested. Please check your email shortly.';
+                    $success = 'A verification code has been sent. Please check your email.';
                     $rateLimit->resetAttempts($clientIp);
                 } else {
                     $error = 'Sign-in could not be completed.';
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($auth->resendTwoFactorCode()) {
                 $pendingUser = $auth->getPendingTwoFactorUser();
                 $isTwoFactorStep = $pendingUser !== null;
-                $success = 'A new verification code has been requested. Please check your email shortly.';
+                $success = 'A new verification code has been sent. Please check your email.';
             } else {
                 $pendingUser = $auth->getPendingTwoFactorUser();
                 $isTwoFactorStep = $pendingUser !== null;

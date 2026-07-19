@@ -53,6 +53,34 @@ final class EmailManager
         );
     }
 
+    public function sendAdminTwoFactorCode(string $recipientEmail, string $recipientName, string $code): bool
+    {
+        try {
+            $expiresInMinutes = defined('TWO_FACTOR_CODE_TTL') ? (int) ceil(TWO_FACTOR_CODE_TTL / 60) : 10;
+            $rendered = $this->renderer->render('admin_two_factor_code', [
+                'recipient_name' => htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8'),
+                'company_name' => htmlspecialchars(COMPANY_NAME, ENT_QUOTES, 'UTF-8'),
+                'site_url' => htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8'),
+                'verification_code' => htmlspecialchars($code, ENT_QUOTES, 'UTF-8'),
+                'expires_in_minutes' => (string) $expiresInMinutes,
+                'current_year' => date('Y'),
+            ]);
+
+            $result = $this->deliverEmail(
+                $recipientEmail,
+                $recipientName,
+                'Your ' . COMPANY_NAME . ' admin verification code',
+                $rendered['html'],
+                $rendered['text']
+            );
+
+            return $result['success'];
+        } catch (Throwable $e) {
+            error_log('Failed to send admin 2FA email: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     private function deliverEmail(string $recipientEmail, string $recipientName, string $subject, string $htmlBody, string $altBody = ''): array
     {
         try {
