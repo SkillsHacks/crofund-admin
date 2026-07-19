@@ -1,0 +1,24 @@
+# Dependency directories
+/vendor/
+
+# Local configuration
+/includes/config.php
+
+# Logs and runtime files
+/logs/
+/includeslogs/
+/error_log
+/assets/error_log
+/components/error_log
+/views/error_log
+/email_templates/error_log
+
+# Cache and temporary files
+/cache/ratelimit.json
+/cache/*.json
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
