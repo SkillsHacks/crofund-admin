@@ -300,19 +300,48 @@ final class EmailQueue
         $subject = $status === 'completed' ? 'Withdrawal Completed' : 'Withdrawal Update';
         $statusLabel = $status === 'completed' ? 'sent successfully' : 'rejected';
         $statusMessage = $status === 'completed'
-            ? 'Your withdrawal has been sent. Funds are typically credited within 4 to 6 business days.'
+            ? 'Your withdrawal has been sent. Funds are typically credited within 1 - 3 business days.'
             : 'Your withdrawal request has been rejected. Please contact support if you need more information.';
 
         $detailsHtml = '';
         $detailsText = '';
-        $details = json_decode((string) ($withdrawal['details'] ?? '{}'), true);
-        if (is_array($details)) {
-            foreach ($details as $key => $value) {
-                $label = htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $key)), ENT_QUOTES, 'UTF-8');
-                $safeValue = htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
-                $detailsHtml .= '<tr><th style="border:1px solid #e5e7eb;padding:10px;text-align:left;background:#f8fafc;">' . $label . '</th><td style="border:1px solid #e5e7eb;padding:10px;">' . $safeValue . '</td></tr>';
-                $detailsText .= ucfirst(str_replace('_', ' ', (string) $key)) . ': ' . (string) $value . "\n";
+        $rawDetails = (string) ($withdrawal['details'] ?? '{}');
+        $details = json_decode($rawDetails, true);
+        if (!is_array($details)) {
+            $details = [];
+        }
+
+        $normalizedDetails = [];
+        foreach ($details as $key => $value) {
+            if (is_int($key) || ctype_digit((string) $key)) {
+                continue;
             }
+
+            if (is_array($value)) {
+                $value = implode(', ', array_map(static function ($item): string {
+                    if (is_scalar($item) || $item === null) {
+                        return (string) $item;
+                    }
+
+                    return json_encode($item, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+                }, $value));
+            } elseif (!is_scalar($value) && $value !== null) {
+                $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+            }
+
+            $normalizedDetails[(string) $key] = trim((string) $value);
+        }
+
+        foreach ($normalizedDetails as $key => $value) {
+            if ($value === '') {
+                continue;
+            }
+
+            $labelText = ucfirst(str_replace('_', ' ', $key));
+            $label = htmlspecialchars($labelText, ENT_QUOTES, 'UTF-8');
+            $safeValue = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+            $detailsHtml .= '<tr><th style="border:1px solid #e5e7eb;padding:10px;text-align:left;background:#f8fafc;">' . $label . '</th><td style="border:1px solid #e5e7eb;padding:10px;">' . $safeValue . '</td></tr>';
+            $detailsText .= $labelText . ': ' . $value . "\n";
         }
 
         $htmlMessage = '<div style="font-family:Arial,sans-serif;background:#f8fafc;color:#0f172a;padding:24px;">'

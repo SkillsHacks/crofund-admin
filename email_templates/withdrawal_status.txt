@@ -3,6 +3,8 @@ Hello {{name}},
 Your withdrawal request has been {{status_label}}.
 {{status_message}}
 
+Withdrawal Details
+------------------
 Amount: ${{amount}}
 Method: {{method}}
 Requested at: {{requested_at}}
