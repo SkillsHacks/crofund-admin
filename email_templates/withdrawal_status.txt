@@ -1,0 +1,12 @@
+Hello {{name}},
+
+Your withdrawal request has been {{status_label}}.
+{{status_message}}
+
+Amount: ${{amount}}
+Method: {{method}}
+Requested at: {{requested_at}}
+{{details_text}}
+
+{{company_name}}
+{{site_url}}

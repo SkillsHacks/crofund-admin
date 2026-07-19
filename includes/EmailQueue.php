@@ -245,14 +245,14 @@ final class EmailQueue
         ]);
     }
 
-    public function queueCustomTemplateEmail(string $messageType, string $recipientEmail, string $recipientName, string $subject, array $templateData, int $priority = self::PRIORITY_NORMAL, ?string $dedupeKey = null): bool
+    public function queueCustomTemplateEmail(string $messageType, string $recipientEmail, string $recipientName, string $subject, string $templateName, array $templateData, int $priority = self::PRIORITY_NORMAL, ?string $dedupeKey = null): bool
     {
         return $this->queueEmail([
             'message_type' => $messageType,
             'recipient_email' => $recipientEmail,
             'recipient_name' => $recipientName,
             'subject' => $subject,
-            'template_name' => 'pending_donation',
+            'template_name' => $templateName,
             'template_data' => $templateData,
             'priority' => $priority,
             'max_attempts' => EMAIL_MAX_RETRIES,
@@ -272,6 +272,7 @@ final class EmailQueue
             $recipientEmail,
             $recipientName,
             'Important: Pending Donation Notification - ' . COMPANY_NAME,
+            'pending_donation',
             [
                 'name' => htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8'),
                 'company_name' => COMPANY_NAME,
@@ -336,14 +337,20 @@ final class EmailQueue
             $recipientEmail,
             $recipientName,
             $subject,
+            'withdrawal_status',
             [
                 'name' => htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8'),
                 'email' => htmlspecialchars($recipientEmail, ENT_QUOTES, 'UTF-8'),
                 'site_url' => SITE_URL,
                 'company_name' => COMPANY_NAME,
                 'current_year' => date('Y'),
-                'custom_message' => $htmlMessage,
-                'plain_message' => $textMessage,
+                'status_label' => htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8'),
+                'status_message' => htmlspecialchars($statusMessage, ENT_QUOTES, 'UTF-8'),
+                'amount' => $amount,
+                'method' => htmlspecialchars($method, ENT_QUOTES, 'UTF-8'),
+                'requested_at' => htmlspecialchars($createdAt, ENT_QUOTES, 'UTF-8'),
+                'details_table_rows' => $detailsHtml,
+                'details_text' => trim($detailsText),
             ],
             self::PRIORITY_HIGH,
             $this->buildDedupeKey('withdrawal_status', $recipientEmail, ['status' => $status, 'created_at' => $createdAt, 'amount' => $amount], 24)
