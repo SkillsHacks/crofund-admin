@@ -1,0 +1,10 @@
+Hello {{recipient_name}},
+
+Use the verification code below to complete your sign-in.
+
+Verification code: {{verification_code}}
+
+This code expires in {{expires_in_minutes}} minutes.
+
+{{company_name}}
+{{site_url}}
