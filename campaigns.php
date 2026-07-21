@@ -185,12 +185,15 @@ if ($success) {
                         </td>
                         <td class="px-4 py-4 text-slate-400"><?= htmlspecialchars($campaign['created_at']) ?></td>
                         <td class="px-4 py-4 text-right">
-                            <form method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this campaign? All associated donations will also be deleted.');">
-                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                                <input type="hidden" name="action" value="delete">
-                                <input type="hidden" name="campaign_id" value="<?= (int) $campaign['id'] ?>">
-                                <button type="submit" class="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100 hover:bg-red-500/15">Delete</button>
-                            </form>
+                            <div class="flex flex-wrap justify-end gap-2">
+                                <a href="campaign_donations.php?campaign_id=<?= (int) $campaign['id'] ?>" class="rounded-xl border border-crofund-500/30 bg-crofund-500/10 px-3 py-2 text-xs font-semibold text-crofund-100 hover:bg-crofund-500/15">View Donations</a>
+                                <form method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this campaign? All associated donations will also be deleted.');">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="campaign_id" value="<?= (int) $campaign['id'] ?>">
+                                    <button type="submit" class="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100 hover:bg-red-500/15">Delete</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
