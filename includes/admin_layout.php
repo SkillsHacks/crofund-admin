@@ -10,6 +10,7 @@ if (!function_exists('admin_nav_items')) {
             'percent' => ['label' => 'Percentages', 'href' => 'percent.php', 'icon' => 'fa-solid fa-percent'],
             'emails' => ['label' => 'Emails', 'href' => 'emails.php', 'icon' => 'fa-solid fa-envelope-circle-check'],
             'campaigns' => ['label' => 'Campaigns', 'href' => 'campaigns.php', 'icon' => 'fa-solid fa-bullhorn'],
+            'heldDonations' => ['label' => 'Held Donations', 'href' => 'held_donations.php', 'icon' => 'fa-solid fa-hand-holding-dollar'],
             'donorsMail' => ['label' => 'Donors Mail', 'href' => 'donorsMail.php', 'icon' => 'fa-solid fa-paper-plane'],
         ];
     }

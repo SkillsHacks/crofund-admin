@@ -1,0 +1,14 @@
+{{headline}}
+
+Hello {{recipient_name}},
+
+{{message_intro}}
+
+Campaign: {{campaign_title}}
+Donation amount: ${{donation_amount}}
+Status: {{donation_status}}
+Reason: {{reason}}
+
+{{message_outro}}
+
+CroFund Support

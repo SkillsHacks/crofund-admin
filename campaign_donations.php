@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once 'includes/config.php';
 session_start();
 require_once 'includes/auth.php';
+require_once 'includes/EmailQueue.php';
 $auth = new Auth();
 $auth->requireAuth();
 require_once 'includes/admin_layout.php';
@@ -44,6 +45,9 @@ try {
         ]
     );
 
+    $queue = new EmailQueue($db);
+    $queue->ensureSchema();
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
             throw new Exception('CSRF token validation failed.');
@@ -79,6 +83,17 @@ try {
                 throw new Exception('A hold reason is required before placing a donation on hold.');
             }
 
+            $donationInfoStmt = $db->prepare(
+                'SELECT d.amount, d.donor_name, d.donor_email, c.title AS campaign_title, u.name AS beneficiary_name
+                 FROM donations d
+                 INNER JOIN campaigns c ON c.id = d.campaign_id
+                 INNER JOIN users u ON u.id = c.user_id
+                 WHERE d.id = ? AND d.campaign_id = ?
+                 LIMIT 1'
+            );
+            $donationInfoStmt->execute([$donationId, $campaignId]);
+            $donationInfo = $donationInfoStmt->fetch();
+
             $holdStmt = $db->prepare(
                 'UPDATE donations
                  SET is_on_hold = 1,
@@ -94,6 +109,29 @@ try {
                 throw new Exception('Donation could not be placed on hold. Only completed donations can be held.');
             }
 
+            if ($donationInfo && !empty($donationInfo['donor_email'])) {
+                $queue->queueCustomTemplateEmail(
+                    'donation_hold_placed',
+                    (string) $donationInfo['donor_email'],
+                    (string) ($donationInfo['donor_name'] ?: 'Donor'),
+                    'Your CroFund donation is currently on hold',
+                    'donation_hold_status',
+                    [
+                        'subject' => 'Your CroFund donation is currently on hold',
+                        'headline' => 'Your donation is currently on hold',
+                        'recipient_name' => htmlspecialchars((string) ($donationInfo['donor_name'] ?: 'Supporter'), ENT_QUOTES, 'UTF-8'),
+                        'message_intro' => 'We are reviewing your recent donation before it can be treated as available campaign funds.',
+                        'campaign_title' => htmlspecialchars((string) ($donationInfo['campaign_title'] ?? 'Campaign'), ENT_QUOTES, 'UTF-8'),
+                        'donation_amount' => number_format((float) ($donationInfo['amount'] ?? 0), 2),
+                        'donation_status' => 'On Hold',
+                        'reason' => htmlspecialchars($holdReason, ENT_QUOTES, 'UTF-8'),
+                        'message_outro' => 'We will notify you again once this review is complete.',
+                    ],
+                    EmailQueue::PRIORITY_NORMAL,
+                    $queue->buildDedupeKey('donation_hold_placed', (string) $donationInfo['donor_email'], ['donation_id' => $donationId, 'hold_reason' => $holdReason], 24)
+                );
+            }
+
             $query = $_GET;
             $query['campaign_id'] = $campaignId;
             $query['msg'] = 'Donation placed on hold successfully.';
@@ -103,6 +141,16 @@ try {
         }
 
         if ($action === 'release_donation_hold') {
+            $donationInfoStmt = $db->prepare(
+                'SELECT d.amount, d.donor_name, d.donor_email, d.hold_reason, c.title AS campaign_title
+                 FROM donations d
+                 INNER JOIN campaigns c ON c.id = d.campaign_id
+                 WHERE d.id = ? AND d.campaign_id = ?
+                 LIMIT 1'
+            );
+            $donationInfoStmt->execute([$donationId, $campaignId]);
+            $donationInfo = $donationInfoStmt->fetch();
+
             $releaseStmt = $db->prepare(
                 'UPDATE donations
                  SET is_on_hold = 0,
@@ -116,6 +164,29 @@ try {
 
             if ($releaseStmt->rowCount() < 1) {
                 throw new Exception('Donation hold could not be released.');
+            }
+
+            if ($donationInfo && !empty($donationInfo['donor_email'])) {
+                $queue->queueCustomTemplateEmail(
+                    'donation_hold_released',
+                    (string) $donationInfo['donor_email'],
+                    (string) ($donationInfo['donor_name'] ?: 'Donor'),
+                    'Your CroFund donation hold has been released',
+                    'donation_hold_status',
+                    [
+                        'subject' => 'Your CroFund donation hold has been released',
+                        'headline' => 'Your donation hold has been released',
+                        'recipient_name' => htmlspecialchars((string) ($donationInfo['donor_name'] ?: 'Supporter'), ENT_QUOTES, 'UTF-8'),
+                        'message_intro' => 'The review on your recent donation has been completed and the donation is no longer on hold.',
+                        'campaign_title' => htmlspecialchars((string) ($donationInfo['campaign_title'] ?? 'Campaign'), ENT_QUOTES, 'UTF-8'),
+                        'donation_amount' => number_format((float) ($donationInfo['amount'] ?? 0), 2),
+                        'donation_status' => 'Released',
+                        'reason' => htmlspecialchars((string) ($donationInfo['hold_reason'] ?? 'Review completed.'), ENT_QUOTES, 'UTF-8'),
+                        'message_outro' => 'Thank you for supporting this campaign through CroFund.',
+                    ],
+                    EmailQueue::PRIORITY_NORMAL,
+                    $queue->buildDedupeKey('donation_hold_released', (string) $donationInfo['donor_email'], ['donation_id' => $donationId], 24)
+                );
             }
 
             $query = $_GET;
