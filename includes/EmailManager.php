@@ -81,6 +81,46 @@ final class EmailManager
         }
     }
 
+    public function sendDonationHoldStatusEmail(
+        string $recipientEmail,
+        string $recipientName,
+        string $subject,
+        string $headline,
+        string $messageIntro,
+        string $campaignTitle,
+        string $donationAmount,
+        string $donationStatus,
+        string $reason,
+        string $messageOutro
+    ): bool {
+        try {
+            $rendered = $this->renderer->render('donation_hold_status', [
+                'subject' => htmlspecialchars($subject, ENT_QUOTES, 'UTF-8'),
+                'headline' => htmlspecialchars($headline, ENT_QUOTES, 'UTF-8'),
+                'recipient_name' => htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8'),
+                'message_intro' => htmlspecialchars($messageIntro, ENT_QUOTES, 'UTF-8'),
+                'campaign_title' => htmlspecialchars($campaignTitle, ENT_QUOTES, 'UTF-8'),
+                'donation_amount' => htmlspecialchars($donationAmount, ENT_QUOTES, 'UTF-8'),
+                'donation_status' => htmlspecialchars($donationStatus, ENT_QUOTES, 'UTF-8'),
+                'reason' => htmlspecialchars($reason, ENT_QUOTES, 'UTF-8'),
+                'message_outro' => htmlspecialchars($messageOutro, ENT_QUOTES, 'UTF-8'),
+            ]);
+
+            $result = $this->deliverEmail(
+                $recipientEmail,
+                $recipientName,
+                $subject,
+                $rendered['html'],
+                $rendered['text']
+            );
+
+            return $result['success'];
+        } catch (Throwable $e) {
+            error_log('Failed to send donation hold status email: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     private function deliverEmail(string $recipientEmail, string $recipientName, string $subject, string $htmlBody, string $altBody = ''): array
     {
         try {
