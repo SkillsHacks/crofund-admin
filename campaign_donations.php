@@ -44,31 +44,87 @@ try {
         ]
     );
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_donation') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
             throw new Exception('CSRF token validation failed.');
         }
 
         $postedCampaignId = filter_input(INPUT_POST, 'campaign_id', FILTER_VALIDATE_INT);
         $donationId = filter_input(INPUT_POST, 'donation_id', FILTER_VALIDATE_INT);
+        $action = (string) ($_POST['action'] ?? '');
 
         if (!$postedCampaignId || $postedCampaignId !== $campaignId || !$donationId) {
-            throw new Exception('Invalid donation delete request.');
+            throw new Exception('Invalid donation request.');
         }
 
-        $deleteStmt = $db->prepare('DELETE FROM donations WHERE id = ? AND campaign_id = ?');
-        $deleteStmt->execute([$donationId, $campaignId]);
+        if ($action === 'delete_donation') {
+            $deleteStmt = $db->prepare('DELETE FROM donations WHERE id = ? AND campaign_id = ?');
+            $deleteStmt->execute([$donationId, $campaignId]);
 
-        if ($deleteStmt->rowCount() < 1) {
-            throw new Exception('Donation not found or already deleted.');
+            if ($deleteStmt->rowCount() < 1) {
+                throw new Exception('Donation not found or already deleted.');
+            }
+
+            $query = $_GET;
+            $query['campaign_id'] = $campaignId;
+            $query['msg'] = 'Donation deleted successfully.';
+            unset($query['page']);
+            header('Location: campaign_donations.php?' . http_build_query($query));
+            exit;
         }
 
-        $query = $_GET;
-        $query['campaign_id'] = $campaignId;
-        $query['msg'] = 'Donation deleted successfully.';
-        unset($query['page']);
-        header('Location: campaign_donations.php?' . http_build_query($query));
-        exit;
+        if ($action === 'hold_donation') {
+            $holdReason = trim((string) ($_POST['hold_reason'] ?? ''));
+            if ($holdReason === '') {
+                throw new Exception('A hold reason is required before placing a donation on hold.');
+            }
+
+            $holdStmt = $db->prepare(
+                'UPDATE donations
+                 SET is_on_hold = 1,
+                     hold_reason = ?,
+                     hold_by = ?,
+                     hold_at = NOW(),
+                     updated_at = NOW()
+                 WHERE id = ? AND campaign_id = ? AND status = "completed"'
+            );
+            $holdStmt->execute([$holdReason, (int) ($_SESSION['admin_id'] ?? 0), $donationId, $campaignId]);
+
+            if ($holdStmt->rowCount() < 1) {
+                throw new Exception('Donation could not be placed on hold. Only completed donations can be held.');
+            }
+
+            $query = $_GET;
+            $query['campaign_id'] = $campaignId;
+            $query['msg'] = 'Donation placed on hold successfully.';
+            unset($query['page']);
+            header('Location: campaign_donations.php?' . http_build_query($query));
+            exit;
+        }
+
+        if ($action === 'release_donation_hold') {
+            $releaseStmt = $db->prepare(
+                'UPDATE donations
+                 SET is_on_hold = 0,
+                     hold_reason = NULL,
+                     hold_by = NULL,
+                     hold_at = NULL,
+                     updated_at = NOW()
+                 WHERE id = ? AND campaign_id = ?'
+            );
+            $releaseStmt->execute([$donationId, $campaignId]);
+
+            if ($releaseStmt->rowCount() < 1) {
+                throw new Exception('Donation hold could not be released.');
+            }
+
+            $query = $_GET;
+            $query['campaign_id'] = $campaignId;
+            $query['msg'] = 'Donation hold released successfully.';
+            unset($query['page']);
+            header('Location: campaign_donations.php?' . http_build_query($query));
+            exit;
+        }
     }
 
     $campaignStmt = $db->prepare(
@@ -97,8 +153,12 @@ try {
     }
 
     if ($statusFilter !== '') {
-        $where[] = 'd.status = :status';
-        $params[':status'] = $statusFilter;
+        if ($statusFilter === 'on_hold') {
+            $where[] = 'COALESCE(d.is_on_hold, 0) = 1';
+        } else {
+            $where[] = 'd.status = :status';
+            $params[':status'] = $statusFilter;
+        }
     }
 
     if ($gatewayFilter !== '') {
@@ -135,7 +195,9 @@ try {
     }
 
     $totalsStmt = $db->prepare(
-        "SELECT COUNT(*) AS donation_count, COALESCE(SUM(d.amount), 0) AS total_amount
+        "SELECT COUNT(*) AS donation_count,
+                COALESCE(SUM(d.amount), 0) AS total_amount,
+                COALESCE(SUM(CASE WHEN COALESCE(d.is_on_hold, 0) = 1 THEN d.amount ELSE 0 END), 0) AS hold_amount
          FROM donations d
          $whereSql"
     );
@@ -144,7 +206,8 @@ try {
 
     $donationSql =
         "SELECT d.id, d.amount, d.payment_gateway, d.status, d.country, d.postal_code,
-                d.transaction_id, d.donor_name, d.donor_email, d.payment_id, d.created_at
+                d.transaction_id, d.donor_name, d.donor_email, d.payment_id, d.created_at,
+                COALESCE(d.is_on_hold, 0) AS is_on_hold, d.hold_reason, d.hold_at
          FROM donations d
          $whereSql
          ORDER BY $orderBy
@@ -166,7 +229,7 @@ try {
     error_log('Error in campaign_donations.php: ' . $e->getMessage());
     $error = $e->getMessage() !== '' ? $e->getMessage() : 'An error occurred while loading campaign donations.';
     $gateways = [];
-    $totals = ['donation_count' => 0, 'total_amount' => 0];
+    $totals = ['donation_count' => 0, 'total_amount' => 0, 'hold_amount' => 0];
     $totalPages = 1;
     $totalDonations = 0;
 }
@@ -221,6 +284,10 @@ if ($success) {
                     <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Amount</p>
                     <p class="mt-2 text-2xl font-semibold text-crofund-300">$<?= number_format((float) ($totals['total_amount'] ?? 0), 2) ?></p>
                 </div>
+                <div class="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
+                    <p class="text-xs uppercase tracking-[0.18em] text-amber-200">On hold</p>
+                    <p class="mt-2 text-2xl font-semibold text-amber-100">$<?= number_format((float) ($totals['hold_amount'] ?? 0), 2) ?></p>
+                </div>
             </div>
         </section>
     </div>
@@ -231,8 +298,8 @@ if ($success) {
             <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Search donor name, email, or transaction ID" class="admin-input xl:col-span-2">
             <select name="status" class="admin-input admin-select">
                 <option value="">All statuses</option>
-                <?php foreach (['completed', 'pending', 'failed', 'refunded'] as $statusOption): ?>
-                    <option value="<?= $statusOption ?>" <?= $statusFilter === $statusOption ? 'selected' : '' ?>><?= ucfirst($statusOption) ?></option>
+                <?php foreach (['completed', 'pending', 'failed', 'refunded', 'on_hold'] as $statusOption): ?>
+                    <option value="<?= $statusOption ?>" <?= $statusFilter === $statusOption ? 'selected' : '' ?>><?= $statusOption === 'on_hold' ? 'On Hold' : ucfirst($statusOption) ?></option>
                 <?php endforeach; ?>
             </select>
             <select name="gateway" class="admin-input admin-select">
@@ -283,15 +350,22 @@ if ($success) {
                             <td class="px-4 py-4">
                                 <?php
                                 $status = (string) $donation['status'];
-                                $statusClass = match ($status) {
-                                    'completed' => 'bg-crofund-500/15 text-crofund-100',
-                                    'pending' => 'bg-amber-500/15 text-amber-200',
-                                    'failed' => 'bg-red-500/15 text-red-200',
-                                    'refunded' => 'bg-sky-500/15 text-sky-200',
-                                    default => 'bg-white/10 text-slate-200',
-                                };
+                                $isOnHold = !empty($donation['is_on_hold']);
+                                $statusClass = $isOnHold
+                                    ? 'bg-amber-500/15 text-amber-200'
+                                    : match ($status) {
+                                        'completed' => 'bg-crofund-500/15 text-crofund-100',
+                                        'pending' => 'bg-amber-500/15 text-amber-200',
+                                        'failed' => 'bg-red-500/15 text-red-200',
+                                        'refunded' => 'bg-sky-500/15 text-sky-200',
+                                        default => 'bg-white/10 text-slate-200',
+                                    };
+                                $statusLabel = $isOnHold ? 'On Hold' : ucfirst($status);
                                 ?>
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold <?= $statusClass ?>"><?= htmlspecialchars(ucfirst($status)) ?></span>
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold <?= $statusClass ?>"><?= htmlspecialchars($statusLabel) ?></span>
+                                <?php if ($isOnHold && !empty($donation['hold_reason'])): ?>
+                                    <div class="mt-2 text-xs text-amber-200"><?= htmlspecialchars((string) $donation['hold_reason']) ?></div>
+                                <?php endif; ?>
                             </td>
                             <td class="px-4 py-4 text-slate-300"><?= htmlspecialchars((string) ($donation['country'] ?: '—')) ?></td>
                             <td class="px-4 py-4 text-slate-300">
@@ -302,13 +376,34 @@ if ($success) {
                             </td>
                             <td class="px-4 py-4 text-slate-400"><?= htmlspecialchars((string) ($donation['created_at'] ?: '—')) ?></td>
                             <td class="px-4 py-4 text-right">
-                                <form method="POST" class="inline-block" onsubmit="return confirm('Delete this donation from the selected campaign?');">
-                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                                    <input type="hidden" name="action" value="delete_donation">
-                                    <input type="hidden" name="campaign_id" value="<?= (int) $campaign['id'] ?>">
-                                    <input type="hidden" name="donation_id" value="<?= (int) $donation['id'] ?>">
-                                    <button type="submit" class="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100 hover:bg-red-500/15">Delete</button>
-                                </form>
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    <?php if ((string) $donation['status'] === 'completed' && empty($donation['is_on_hold'])): ?>
+                                        <form method="POST" class="inline-flex flex-col items-end gap-2">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                            <input type="hidden" name="action" value="hold_donation">
+                                            <input type="hidden" name="campaign_id" value="<?= (int) $campaign['id'] ?>">
+                                            <input type="hidden" name="donation_id" value="<?= (int) $donation['id'] ?>">
+                                            <input type="text" name="hold_reason" placeholder="Hold reason" class="admin-input min-w-[180px] max-w-[220px] px-3 py-2 text-xs">
+                                            <button type="submit" class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-500/15">Place on hold</button>
+                                        </form>
+                                    <?php elseif (!empty($donation['is_on_hold'])): ?>
+                                        <form method="POST" class="inline-block">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                            <input type="hidden" name="action" value="release_donation_hold">
+                                            <input type="hidden" name="campaign_id" value="<?= (int) $campaign['id'] ?>">
+                                            <input type="hidden" name="donation_id" value="<?= (int) $donation['id'] ?>">
+                                            <button type="submit" class="rounded-xl border border-crofund-500/30 bg-crofund-500/10 px-3 py-2 text-xs font-semibold text-crofund-100 hover:bg-crofund-500/15">Release hold</button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <form method="POST" class="inline-block" onsubmit="return confirm('Delete this donation from the selected campaign?');">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                        <input type="hidden" name="action" value="delete_donation">
+                                        <input type="hidden" name="campaign_id" value="<?= (int) $campaign['id'] ?>">
+                                        <input type="hidden" name="donation_id" value="<?= (int) $donation['id'] ?>">
+                                        <button type="submit" class="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-100 hover:bg-red-500/15">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
