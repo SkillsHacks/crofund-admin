@@ -105,6 +105,50 @@ class AdminTrustRiskService
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function getUsersWithPendingIdentityReview(string $query = ''): array
+    {
+        $sql = 'SELECT u.id,
+                       u.name,
+                       u.email,
+                       u.created_at,
+                       COALESCE(u.risk_status, "ACTIVE") AS risk_status,
+                       u.risk_status_reason,
+                       u.risk_review_expires_at,
+                       latest_attempt.status AS identity_status,
+                       latest_attempt.decision_status,
+                       latest_attempt.created_at AS identity_submitted_at
+                FROM users u
+                INNER JOIN (
+                    SELECT iva.user_id,
+                           iva.status,
+                           iva.decision_status,
+                           iva.created_at,
+                           iva.id
+                    FROM identity_verification_attempts iva
+                    INNER JOIN (
+                        SELECT user_id, MAX(id) AS latest_id
+                        FROM identity_verification_attempts
+                        GROUP BY user_id
+                    ) latest ON latest.latest_id = iva.id
+                ) latest_attempt ON latest_attempt.user_id = u.id
+                WHERE latest_attempt.status IN ("pending_review", "uploaded")';
+
+        $params = [];
+
+        if ($query !== '') {
+            $sql .= ' AND (u.name LIKE ? OR u.email LIKE ?)';
+            $params[] = '%' . $query . '%';
+            $params[] = '%' . $query . '%';
+        }
+
+        $sql .= ' ORDER BY latest_attempt.created_at DESC, u.created_at DESC LIMIT 100';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     public function getModerationHistory(int $userId): array
     {
         $stmt = $this->db->prepare(

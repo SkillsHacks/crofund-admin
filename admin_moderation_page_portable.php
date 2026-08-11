@@ -13,6 +13,7 @@ $error = null;
 $success = null;
 $query = trim($_GET['q'] ?? '');
 $statusFilter = trim($_GET['status'] ?? '');
+$pendingIdentityOnly = isset($_GET['pending_identity']) && $_GET['pending_identity'] === '1';
 $selectedUserId = isset($_GET['user_id']) ? max(0, (int) $_GET['user_id']) : 0;
 $selectedProfile = null;
 $selectedHistory = [];
@@ -85,7 +86,9 @@ try {
         }
     }
 
-    $users = $trustRisk->searchUsersForModeration($query, $statusFilter !== '' ? $statusFilter : null);
+    $users = $pendingIdentityOnly
+        ? $trustRisk->getUsersWithPendingIdentityReview($query)
+        : $trustRisk->searchUsersForModeration($query, $statusFilter !== '' ? $statusFilter : null);
 
     if ($selectedUserId > 0) {
         $selectedProfile = $trustRisk->getUserRiskProfile($selectedUserId);
@@ -128,7 +131,7 @@ if ($success) {
         <section class="admin-card rounded-3xl p-6">
             <div class="mb-4">
                 <h3 class="text-lg font-semibold text-white">Search accounts</h3>
-                <p class="mt-1 text-sm text-slate-400">Filter by name, email, or current risk status.</p>
+                <p class="mt-1 text-sm text-slate-400">Filter by name, email, current risk status, or load users whose latest ID submission is under review.</p>
             </div>
             <form method="GET" class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr),220px,auto]">
                 <input
@@ -144,13 +147,19 @@ if ($success) {
                         <option value="<?php echo $status; ?>" <?php echo $statusFilter === $status ? 'selected' : ''; ?>><?php echo $status; ?></option>
                     <?php endforeach; ?>
                 </select>
-                <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-crofund-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white">Search</button>
+                <div class="flex flex-wrap gap-3">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-crofund-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white">Search</button>
+                    <button type="submit" name="pending_identity" value="1" class="inline-flex items-center justify-center rounded-2xl border border-crofund-500/30 bg-crofund-500/10 px-5 py-3 text-sm font-semibold text-crofund-50 hover:bg-crofund-500/15">Fetch Under Review IDs</button>
+                    <?php if ($pendingIdentityOnly || $query !== '' || $statusFilter !== ''): ?>
+                        <a href="admin_moderation_page_portable.php" class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-white/10">Reset</a>
+                    <?php endif; ?>
+                </div>
             </form>
         </section>
 
         <section class="admin-card table-shell rounded-3xl p-0 overflow-hidden">
             <div class="px-6 py-5 border-b border-white/10">
-                <h3 class="text-lg font-semibold text-white">Users</h3>
+                <h3 class="text-lg font-semibold text-white"><?php echo $pendingIdentityOnly ? 'Users with IDs Under Review' : 'Users'; ?></h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm text-slate-200">
@@ -158,7 +167,7 @@ if ($success) {
                         <tr>
                             <th class="px-5 py-4 text-left">User</th>
                             <th class="px-5 py-4 text-left">Status</th>
-                            <th class="px-5 py-4 text-left">Created</th>
+                            <th class="px-5 py-4 text-left"><?php echo $pendingIdentityOnly ? 'ID Review' : 'Created'; ?></th>
                             <th class="px-5 py-4 text-right">Action</th>
                         </tr>
                     </thead>
@@ -172,9 +181,16 @@ if ($success) {
                                 <td class="px-5 py-4">
                                     <span class="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200"><?php echo htmlspecialchars((string) ($listedUser['risk_status'] ?? 'ACTIVE')); ?></span>
                                 </td>
-                                <td class="px-5 py-4 text-slate-400"><?php echo htmlspecialchars((string) ($listedUser['created_at'] ?? '')); ?></td>
+                                <td class="px-5 py-4 text-slate-400">
+                                    <?php if ($pendingIdentityOnly): ?>
+                                        <div class="text-slate-200"><?php echo htmlspecialchars($trustRisk->getIdentityAttemptStatusLabel((string) ($listedUser['identity_status'] ?? 'pending_review'))); ?></div>
+                                        <div class="text-xs text-slate-500">Submitted <?php echo htmlspecialchars((string) ($listedUser['identity_submitted_at'] ?? '')); ?></div>
+                                    <?php else: ?>
+                                        <?php echo htmlspecialchars((string) ($listedUser['created_at'] ?? '')); ?>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="px-5 py-4 text-right">
-                                    <a href="?q=<?php echo urlencode($query); ?>&status=<?php echo urlencode($statusFilter); ?>&user_id=<?php echo (int) $listedUser['id']; ?>" class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-100 hover:bg-white/10">Review</a>
+                                    <a href="?q=<?php echo urlencode($query); ?>&status=<?php echo urlencode($statusFilter); ?>&pending_identity=<?php echo $pendingIdentityOnly ? '1' : '0'; ?>&user_id=<?php echo (int) $listedUser['id']; ?>" class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-100 hover:bg-white/10">Review</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -182,7 +198,7 @@ if ($success) {
                 </table>
             </div>
             <?php if (empty($users)): ?>
-                <div class="px-6 py-12 text-center text-slate-400">No users matched your current search.</div>
+                <div class="px-6 py-12 text-center text-slate-400"><?php echo $pendingIdentityOnly ? 'No users currently have IDs under review.' : 'No users matched your current search.'; ?></div>
             <?php endif; ?>
         </section>
     </div>
