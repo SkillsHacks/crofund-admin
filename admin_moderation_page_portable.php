@@ -100,10 +100,7 @@ try {
 admin_shell_start(
     'moderation',
     'Trust & Risk Moderation',
-    'Search users, update account risk status, add flags, and review moderation history.',
-    [
-        ['label' => 'Risk Service', 'href' => 'admin_trust_risk_portable.php', 'icon' => 'fa-solid fa-shield-halved'],
-    ]
+    'Search users, update account risk status, add flags, and review moderation history.'
 );
 
 if ($error) {

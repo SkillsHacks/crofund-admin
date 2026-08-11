@@ -6,6 +6,7 @@ if (!function_exists('admin_nav_items')) {
         return [
             'dashboard' => ['label' => 'Dashboard', 'href' => 'dashboard.php', 'icon' => 'fa-solid fa-chart-pie'],
             'withdraws' => ['label' => 'Withdrawals', 'href' => 'withdraws.php', 'icon' => 'fa-solid fa-money-bill-transfer'],
+            'moderation' => ['label' => 'Moderation', 'href' => 'admin_moderation_page_portable.php', 'icon' => 'fa-solid fa-shield-halved'],
             'percent' => ['label' => 'Percentages', 'href' => 'percent.php', 'icon' => 'fa-solid fa-percent'],
             'emails' => ['label' => 'Emails', 'href' => 'emails.php', 'icon' => 'fa-solid fa-envelope-circle-check'],
             'campaigns' => ['label' => 'Campaigns', 'href' => 'campaigns.php', 'icon' => 'fa-solid fa-bullhorn'],
