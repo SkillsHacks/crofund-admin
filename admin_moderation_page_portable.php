@@ -270,7 +270,7 @@ if ($success) {
                     </div>
 
                     <?php if ($latestIdentityAttemptIsReviewable): ?>
-                        <form method="POST" class="mt-5 space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                        <form method="POST" class="mt-5 space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="user_id" value="<?php echo (int) $selectedProfile['user']['id']; ?>">
                             <input type="hidden" name="attempt_id" value="<?php echo (int) ($latestIdentityAttempt['id'] ?? 0); ?>">
@@ -282,10 +282,10 @@ if ($success) {
                                 <label class="mb-1.5 block text-sm font-semibold text-slate-200">Internal notes</label>
                                 <textarea name="internal_notes" rows="3" class="admin-input" placeholder="Optional internal notes for the audit trail."></textarea>
                             </div>
-                            <button type="submit" name="approve_identity_verification" class="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-crofund-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white">Approve identity verification</button>
+                            <button type="submit" name="approve_identity_verification" class="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-crofund-500 to-emerald-600 px-4 py-2.5 text-xs font-semibold text-white">Approve identity verification</button>
                         </form>
 
-                        <form method="POST" class="mt-4 space-y-4 rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
+                        <form method="POST" class="mt-4 space-y-3 rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="user_id" value="<?php echo (int) $selectedProfile['user']['id']; ?>">
                             <input type="hidden" name="attempt_id" value="<?php echo (int) ($latestIdentityAttempt['id'] ?? 0); ?>">
@@ -297,7 +297,7 @@ if ($success) {
                                 <label class="mb-1.5 block text-sm font-semibold text-slate-200">Internal notes</label>
                                 <textarea name="internal_notes" rows="3" class="admin-input" placeholder="Optional internal notes for the audit trail."></textarea>
                             </div>
-                            <button type="submit" name="reject_identity_verification" class="inline-flex w-full items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-50 hover:bg-red-500/15">Reject identity verification</button>
+                            <button type="submit" name="reject_identity_verification" class="inline-flex w-full items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-50 hover:bg-red-500/15">Reject identity verification</button>
                         </form>
                     <?php else: ?>
                         <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
@@ -333,7 +333,7 @@ if ($success) {
                         <label class="mb-1.5 block text-sm font-semibold text-slate-200">Review expiry</label>
                         <input type="datetime-local" name="review_expires_at" class="admin-input">
                     </div>
-                    <button type="submit" name="set_status" class="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-crofund-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white">Save status change</button>
+                    <button type="submit" name="set_status" class="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-crofund-500 to-emerald-600 px-4 py-2.5 text-xs font-semibold text-white">Save status change</button>
                 </form>
 
                 <form method="POST" class="mt-6 space-y-4 border-t border-white/10 pt-6">
@@ -364,7 +364,7 @@ if ($success) {
                         <label class="mb-1.5 block text-sm font-semibold text-slate-200">Review expiry</label>
                         <input type="datetime-local" name="review_expires_at" class="admin-input">
                     </div>
-                    <button type="submit" name="add_flag" class="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 hover:bg-white/10">Record flag</button>
+                    <button type="submit" name="add_flag" class="inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-slate-100 hover:bg-white/10">Record flag</button>
                 </form>
             <?php else: ?>
                 <p class="mt-4 text-sm text-slate-400">Select a user from the table to review their account status and moderation history.</p>
@@ -429,24 +429,24 @@ if ($success) {
 
                             <?php if ($trustRisk->canReviewIdentityAttempt($attempt)): ?>
                                 <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                                    <form method="POST" class="space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                                    <form method="POST" class="space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                         <input type="hidden" name="user_id" value="<?php echo (int) $selectedProfile['user']['id']; ?>">
                                         <input type="hidden" name="attempt_id" value="<?php echo (int) ($attempt['id'] ?? 0); ?>">
                                         <label class="block text-sm font-semibold text-slate-200">Approve this attempt</label>
                                         <textarea name="reason" rows="3" required class="admin-input" placeholder="Record why this identity submission is being approved."></textarea>
                                         <textarea name="internal_notes" rows="2" class="admin-input" placeholder="Optional internal notes."></textarea>
-                                        <button type="submit" name="approve_identity_verification" class="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-crofund-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white">Approve this attempt</button>
+                                        <button type="submit" name="approve_identity_verification" class="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-crofund-500 to-emerald-600 px-4 py-2.5 text-xs font-semibold text-white">Approve this attempt</button>
                                     </form>
 
-                                    <form method="POST" class="space-y-3 rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
+                                    <form method="POST" class="space-y-3 rounded-2xl border border-red-500/20 bg-red-500/5 p-3">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                         <input type="hidden" name="user_id" value="<?php echo (int) $selectedProfile['user']['id']; ?>">
                                         <input type="hidden" name="attempt_id" value="<?php echo (int) ($attempt['id'] ?? 0); ?>">
                                         <label class="block text-sm font-semibold text-slate-200">Reject this attempt</label>
                                         <textarea name="reason" rows="3" required class="admin-input" placeholder="Record why this identity submission is being rejected."></textarea>
                                         <textarea name="internal_notes" rows="2" class="admin-input" placeholder="Optional internal notes."></textarea>
-                                        <button type="submit" name="reject_identity_verification" class="inline-flex w-full items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-50 hover:bg-red-500/15">Reject this attempt</button>
+                                        <button type="submit" name="reject_identity_verification" class="inline-flex w-full items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-50 hover:bg-red-500/15">Reject this attempt</button>
                                     </form>
                                 </div>
                             <?php else: ?>
