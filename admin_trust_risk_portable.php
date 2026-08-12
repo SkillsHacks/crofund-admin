@@ -73,7 +73,8 @@ class AdminTrustRiskService
             }
         }
 
-        throw new RuntimeException('This admin account is not linked to a users record required by moderation audit tables. Link the admin to a users row first.');
+        error_log('Moderation fallback: admin session ' . $adminId . ' is not linked to a users row. Falling back to admin_users.id for audit records.');
+        return $adminId;
     }
 
     public function searchUsersForModeration(string $query = '', ?string $status = null): array
