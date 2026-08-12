@@ -112,6 +112,28 @@ if ($error) {
 if ($success) {
     admin_alert($success, 'success');
 }
+
+function resolvePublicImageUrl(?string $path): ?string
+{
+    if ($path === null) {
+        return null;
+    }
+
+    $normalizedPath = trim(str_replace('\\', '/', (string) $path));
+    if ($normalizedPath === '') {
+        return null;
+    }
+
+    if (preg_match('/^https?:\/\//i', $normalizedPath) === 1) {
+        return $normalizedPath;
+    }
+
+    if (str_starts_with($normalizedPath, '/')) {
+        return rtrim(SITE_URL, '/') . $normalizedPath;
+    }
+
+    return rtrim(SITE_URL, '/') . '/' . ltrim($normalizedPath, '/');
+}
 ?>
 <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.7fr),420px]">
     <div class="space-y-6">
@@ -259,6 +281,13 @@ if ($success) {
                                 <p class="mt-1"><strong class="text-white">File:</strong> <?php echo htmlspecialchars((string) ($latestIdentityAttempt['original_filename'] ?? '')); ?></p>
                             </div>
                         </div>
+                        <?php $latestIdentityImageUrl = resolvePublicImageUrl($latestIdentityAttempt['original_image_path'] ?? ($latestIdentityAttempt['processed_image_path'] ?? null)); ?>
+                        <?php if ($latestIdentityImageUrl): ?>
+                            <div class="mt-4">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Uploaded verification image</p>
+                                <img src="<?php echo htmlspecialchars($latestIdentityImageUrl); ?>" alt="Uploaded identity verification image" class="mt-3 max-h-80 w-full rounded-2xl border border-white/10 bg-slate-950/40 object-contain">
+                            </div>
+                        <?php endif; ?>
                         <?php if (!empty($latestIdentityAttempt['failure_reason'])): ?>
                             <div class="mt-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                                 <?php echo htmlspecialchars((string) $latestIdentityAttempt['failure_reason']); ?>
@@ -402,6 +431,14 @@ if ($success) {
                                     <p class="mt-1"><strong class="text-white">Processed copy:</strong> <?php echo htmlspecialchars((string) ($attempt['processed_image_path'] ?? '')); ?></p>
                                 </div>
                             </div>
+
+                            <?php $attemptImageUrl = resolvePublicImageUrl($attempt['original_image_path'] ?? ($attempt['processed_image_path'] ?? null)); ?>
+                            <?php if ($attemptImageUrl): ?>
+                                <div class="mt-4">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Uploaded verification image</p>
+                                    <img src="<?php echo htmlspecialchars($attemptImageUrl); ?>" alt="Identity verification document image" class="mt-3 max-h-64 w-full rounded-2xl border border-white/10 bg-slate-950/40 object-contain">
+                                </div>
+                            <?php endif; ?>
 
                             <?php if (!empty($attempt['ocr_message'])): ?>
                                 <p class="mt-3 text-sm text-slate-400"><?php echo htmlspecialchars((string) $attempt['ocr_message']); ?></p>
