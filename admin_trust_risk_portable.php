@@ -73,8 +73,14 @@ class AdminTrustRiskService
             }
         }
 
-        error_log('Moderation fallback: admin session ' . $adminId . ' is not linked to a users row. Falling back to admin_users.id for audit records.');
-        return $adminId;
+        if ($adminUser) {
+            $linkedUserId = $this->createLinkedModeratorUser($adminId, $adminUser);
+            if ($linkedUserId > 0) {
+                return $linkedUserId;
+            }
+        }
+
+        throw new RuntimeException('Unable to resolve or create a linked users record for this admin account.');
     }
 
     public function searchUsersForModeration(string $query = '', ?string $status = null): array
@@ -478,6 +484,37 @@ class AdminTrustRiskService
             $_SERVER['REMOTE_ADDR'] ?? null,
             $_SERVER['HTTP_USER_AGENT'] ?? null,
         ]);
+    }
+
+    private function createLinkedModeratorUser(int $adminId, array $adminUser): int
+    {
+        $email = trim((string) ($adminUser['email'] ?? ''));
+        $fullName = trim((string) ($adminUser['full_name'] ?? ''));
+        $username = trim((string) ($adminUser['username'] ?? ''));
+
+        if ($email !== '') {
+            $existingByEmail = $this->db->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+            $existingByEmail->execute([$email]);
+            $user = $existingByEmail->fetch(PDO::FETCH_ASSOC);
+            if ($user && !empty($user['id'])) {
+                return (int) $user['id'];
+            }
+        }
+
+        $name = $fullName !== '' ? $fullName : ($username !== '' ? $username : ('Admin ' . $adminId));
+        $generatedEmail = $email !== '' ? $email : ('admin-' . $adminId . '@crofund-admin.local');
+        $generatedPasswordHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
+
+        $insert = $this->db->prepare(
+            'INSERT INTO users (name, email, password, created_at)
+             VALUES (?, ?, ?, NOW())'
+        );
+        $insert->execute([$name, $generatedEmail, $generatedPasswordHash]);
+
+        $newUserId = (int) $this->db->lastInsertId();
+        error_log('Created linked users row ' . $newUserId . ' for admin_users.id ' . $adminId . ' to satisfy moderation foreign keys.');
+
+        return $newUserId;
     }
 
     private function defaultScoreForSeverity(string $severity): int
