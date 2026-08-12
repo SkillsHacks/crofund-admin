@@ -114,6 +114,7 @@ if ($success) {
 }
 
 function resolvePublicImageUrl(?string $path): ?string
+
 {
     if ($path === null) {
         return null;
@@ -128,13 +129,15 @@ function resolvePublicImageUrl(?string $path): ?string
         return $normalizedPath;
     }
 
-    if (str_starts_with($normalizedPath, '/')) {
-        return rtrim(SITE_URL, '/') . $normalizedPath;
+    if (preg_match('/^\/\//', $normalizedPath) === 1) {
+        return 'https:' . $normalizedPath;
     }
 
-    return rtrim(SITE_URL, '/') . '/' . ltrim($normalizedPath, '/');
+    return 'https://crofund.org/new/' . ltrim($normalizedPath, '/');
 }
+
 ?>
+
 <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.7fr),420px]">
     <div class="space-y-6">
         <section class="admin-card rounded-3xl p-6 sm:p-8">
