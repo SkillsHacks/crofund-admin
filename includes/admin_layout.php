@@ -10,6 +10,7 @@ if (!function_exists('admin_nav_items')) {
             'percent' => ['label' => 'Percentages', 'href' => 'percent.php', 'icon' => 'fa-solid fa-percent'],
             'emails' => ['label' => 'Emails', 'href' => 'emails.php', 'icon' => 'fa-solid fa-envelope-circle-check'],
             'campaigns' => ['label' => 'Campaigns', 'href' => 'campaigns.php', 'icon' => 'fa-solid fa-bullhorn'],
+            'settings' => ['label' => 'Settings', 'href' => 'settings.php', 'icon' => 'fa-solid fa-gear'],
             'heldDonations' => ['label' => 'Held Donations', 'href' => 'held_donations.php', 'icon' => 'fa-solid fa-hand-holding-dollar'],
             'donorsMail' => ['label' => 'Donors Mail', 'href' => 'donorsMail.php', 'icon' => 'fa-solid fa-paper-plane'],
         ];
@@ -34,6 +35,9 @@ if (!function_exists('admin_shell_start')) {
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#020617">
     <title><?php echo $fullTitle; ?></title>
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+    <link rel="shortcut icon" type="image/svg+xml" href="/assets/images/logo.svg">
+    <link rel="apple-touch-icon" href="/assets/images/logo.svg">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -142,7 +146,7 @@ if (!function_exists('admin_shell_start')) {
             <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-crofund-500 to-emerald-700 text-white shadow-lg shadow-crofund-900/40">
-                        <i class="fa-solid fa-seedling"></i>
+                        <img src="/assets/images/logo.svg" alt="CroFunding logo" class="h-7 w-7">
                     </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.24em] text-crofund-200/80">Crofund</p>
