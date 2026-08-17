@@ -41,7 +41,7 @@ try {
             throw new Exception('Please enter a valid PayPal business email address.');
         }
 
-        $existing = $db->prepare('SELECT id FROM settings WHERE setting_key = :setting_key LIMIT 1');
+        $existing = $db->prepare('SELECT setting_key FROM settings WHERE setting_key = :setting_key LIMIT 1');
         $existing->execute([':setting_key' => 'paypal_business_email']);
 
         if ($existing->fetch()) {
