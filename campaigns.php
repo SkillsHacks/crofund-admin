@@ -136,7 +136,7 @@ if ($success) {
             <option value="">All Statuses</option>
             <option value="active" <?= $statusFilter === 'active' ? 'selected' : '' ?>>Active</option>
             <option value="inactive" <?= $statusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option>
-            <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>Pending</option>
+            <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>Pendng</option>
         </select>
         <select name="category" class="admin-input admin-select">
             <option value="">All Categories</option>
